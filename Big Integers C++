@@ -1,0 +1,409 @@
+#include <iostream>
+#include <math.h>
+#include <cstring>
+#include <cstdlib>
+using namespace std;
+
+
+class BigInteger {
+private:
+    char *number;
+    int digits;
+    char sign;
+    bool greaterOrEqual(const BigInteger &num);
+    bool IsEquals(const BigInteger &num);
+    BigInteger& operator=(const BigInteger &num);
+    void allocateMemory(int newDigits) {
+	    delete[] number; 
+	    number = new char[newDigits + 1]; 
+	    number[newDigits] = '\0';       
+	}
+
+public:
+    BigInteger();
+    BigInteger(const char *num);
+    BigInteger(int num);
+    BigInteger(const BigInteger &num);
+    BigInteger add(BigInteger &num);
+    BigInteger subtract(BigInteger &num);
+    BigInteger multiply(BigInteger &num);
+    BigInteger divide(BigInteger &num);
+    void print();
+    ~BigInteger();
+};
+BigInteger::BigInteger() {
+    digits = 0;
+    number = new char[digits+1];
+    number[0] = '0';
+    number[1] = '\0';
+    sign = '+';
+}
+BigInteger::BigInteger(int num){
+    if (num > 0)
+    {
+        sign = '+';
+    }
+    else
+	{	
+        sign='-';
+        num = num * -1;
+    }
+    digits = log10(num) + 1;
+
+    number = new char[digits+1];
+
+    for(int i = digits-1;i>=0;i--)
+    {
+        number[i] = num%10 +'0' ;
+        num/=10;
+    }
+    number[digits] = '\0';
+
+}
+BigInteger::BigInteger(const BigInteger &num)
+{
+	this->sign = num.sign;
+    this->digits = num.digits;
+    this->number = new char[this->digits+1];
+
+	// Initializing every val of number with num.number[i]
+	
+    for(int i=0;i<=this->digits;i++)
+        this->number[i] = num.number[i];
+
+}
+BigInteger::BigInteger(const char *num)
+{
+    int start = 0;
+    if (num[0] == '-' || num[0] == '+')
+    {
+        sign = num[0];
+        start++;
+    }
+    else
+        sign = '+';
+
+    digits = strlen(num) - start;
+    number = new char[digits+1-start];
+    for(int i=0;i<digits;i++)
+        number[i] =  num[i+start];
+    number[digits] = '\0';
+}
+
+bool BigInteger::IsEquals(const BigInteger &num){
+	if (sign != num.sign) {
+	    return false;
+	}
+	if (num.digits != digits) {
+	    return false;
+	}
+	for (int i = 0; i < digits; ++i) {
+	    if (number[i] != num.number[i]) {
+	      	return false;
+	    }
+	  }
+	  return true;
+}
+
+
+bool BigInteger::greaterOrEqual(const BigInteger &num) {
+    if (sign != num.sign) {
+        return sign < num.sign;
+    }
+
+    if (digits != num.digits) {
+        return (sign == '+' && digits > num.digits) || (sign == '-' && digits < num.digits);
+    }
+
+    for (int i = 0; i < digits; ++i) {
+        if (number[i] != num.number[i]) {
+            return (sign == '+' && number[i] > num.number[i]) || (sign == '-' && number[i] < num.number[i]);
+        }
+    }
+    return true;
+}
+BigInteger& BigInteger::operator=(const BigInteger &num) {
+  	if (this != &num) {
+    	if (digits != num.digits) {
+		    delete[] number;
+		    digits = num.digits;
+		    number = new char[digits + 1];
+    	}
+    sign = num.sign;
+    memcpy(number, num.number, digits + 1); 
+  }
+  	return *this;
+}
+void BigInteger::print() {
+    if (sign == '-') 
+		cout << sign ;
+    cout << number;
+}
+
+BigInteger BigInteger::multiply(BigInteger &num) {
+    BigInteger resultant = BigInteger(*this);
+    BigInteger adder = BigInteger(*this);
+    BigInteger range = BigInteger(num);
+    BigInteger index(1);
+    BigInteger addition = BigInteger(1);
+    
+    while(!index.IsEquals(range))
+    {
+		index = index.add(addition);
+        resultant = resultant.add(adder);
+    }
+    
+    resultant.sign = '+';
+    
+    if (num.sign != this->sign)
+        resultant.sign = '-';
+    return resultant;
+}
+BigInteger BigInteger::divide(BigInteger &num) {
+    BigInteger zero;
+    if (num.IsEquals(zero))
+    {
+        cout << "Intermediate form.\n";
+        return zero;
+    }
+    BigInteger resultant;
+    
+    BigInteger neww = BigInteger(*this);
+    neww.sign = '+';
+    
+    BigInteger sub = BigInteger(num);
+    sub.sign = '+';
+    
+    BigInteger addition = BigInteger(1);
+    
+    while(neww.greaterOrEqual(sub))
+    {
+        neww = neww.subtract(sub);
+        resultant = resultant.add(addition);
+    }
+    
+    if (num.sign!= this->sign)
+        resultant.sign = '-';
+
+    return resultant;
+}
+BigInteger BigInteger::add(BigInteger &other) {
+	BigInteger result;
+	int maxDigits = max(digits, other.digits);
+	result.digits = maxDigits + 1;
+	result.number = new char[result.digits + 1];
+	int carry = 0;
+	
+	int i = 0;
+	while (i < maxDigits) {
+	    int sum = carry;
+	    if (i < digits) {
+	      	sum += number[digits - i - 1] - '0';
+	    }
+	    if (i < other.digits) {
+	      	sum += other.number[other.digits - i - 1] - '0';
+	    }
+	
+	    result.number[result.digits - i - 1] = '0' + sum % 10;
+	    carry = sum / 10;
+	    i++;
+	  }
+	
+	  	if (carry > 0) {
+	    	result.number[0] = '0' + carry;
+	    	result.number[result.digits] = '\0';
+	  	} 
+	  	else
+	   	{
+	    	result.digits -= 1;
+	    	char *temp = new char[result.digits + 1];
+	    	int j = 0; 
+	    	while (j < result.digits) {
+	      		temp[j] = result.number[1 + j];
+	      		j++;
+	    	}
+	    	delete[] result.number;
+	    	result.number = temp;
+	    	result.number[result.digits] = '\0';
+	  }
+	
+	 	result.sign = '+';
+	  	return result;
+	}
+
+
+BigInteger BigInteger::subtract(BigInteger &other) {
+  	if (this->sign == '-' && other.sign == '-') {
+	    BigInteger num1 = BigInteger(*this), num2 = BigInteger(other);
+	    num1.sign = '+';
+	    num2.sign = '+';
+	    BigInteger result = other.subtract(num1);
+	    return result;
+  } 
+  	else if (this->sign == '+' && other.sign == '-') {
+	    BigInteger num1 = BigInteger(*this), num2 = BigInteger(other);
+	    num1.sign = '+';
+	    num2.sign = '+';
+	    BigInteger result = num1.add(num2);
+	    return result;
+  } 
+  	else if (this->sign == '-' && other.sign == '+') {
+	    BigInteger num1 = BigInteger(*this), num2 = BigInteger(other);
+	    num1.sign = '-';
+	    num2.sign = '-';
+	    BigInteger result = num2.add(num1);
+	    return result;
+  }
+
+	BigInteger result;
+	BigInteger *largerNum, *smallerNum;
+  	if (this->greaterOrEqual(other)) {
+	    largerNum = new BigInteger(*this);
+	    smallerNum = new BigInteger(other);
+	    result.sign = '+';
+  	} 
+  	else 
+  	{
+	    smallerNum = new BigInteger(*this);
+	    largerNum = new BigInteger(other);
+	    result.sign = '-';
+  	}
+  	result.digits = largerNum->digits;
+  	result.number = new char[result.digits + 1];
+  	int borrow = 0;
+  	int i = 0; 
+  	while (i < smallerNum->digits) {
+    	int diff = (largerNum->number[largerNum->digits - i - 1] - '0') - (smallerNum->number[smallerNum->digits - i - 1] - '0') - borrow;
+    	if (diff < 0) {
+      		diff += 10;
+      		borrow = 1;
+    	} 
+		else {
+      		borrow = 0;
+    	}
+    	result.number[result.digits - i - 1] = '0' + diff;
+    	i++;
+  	}
+  	i = smallerNum->digits;  
+  	while (i < largerNum->digits) {
+    	int diff = (largerNum->number[largerNum->digits - i - 1] - '0') - borrow;
+    	if (diff < 0) {
+      		diff += 10;
+      		borrow = 1;
+    	} 
+		else 
+		{
+      		borrow = 0;
+    	}
+    result.number[result.digits - i - 1] = '0' + diff;
+    i++;
+  	}
+  	result.number[result.digits] = '\0';
+  	while (result.digits > 1 && result.number[0] == '0') {
+	    result.digits--;
+	    char *temp = new char[result.digits + 1];
+    	for (int i = 0; i < result.digits; i++) {
+      		temp[i] = result.number[1 + i];
+    	}
+    delete[] result.number;
+    result.number = temp;
+  }
+  	result.number[result.digits] = '\0';
+  	delete smallerNum;
+  	delete largerNum;
+  	return result;
+}
+
+
+BigInteger::~BigInteger()
+{
+    delete[] number;
+}
+
+
+int main()
+{
+    BigInteger *num1 = 0;
+    BigInteger *num2 = 0;
+    string input;
+    char operation;
+    bool exit = false;
+    cout << "_________________________________________Welcome to the Big Number Calculator!__________________________________________\n";
+  	cout << "-> What mathematical magic can I perform today?\n\n\n";
+  	cout << "  +. Addition Extravaganza\n";
+  	cout << "  -. Subtraction Showdown\n";
+  	cout << "  *. Multiplication Marathon\n";
+  	cout << "  /. Division Duel\n";
+  	cout << "  !. Exit the Arena\n";
+
+  
+  	cout << "\nEnter your expression in the format:  number1 op number2\n";
+  	cout << "(e.g., 123 + 456)\n";
+  	cout << "Enter your expression: ";
+    cin >> input;
+    num1 = new BigInteger(input.c_str());
+    while (!exit) {
+        cin >> operation;
+        switch (operation) {
+            case '+': {
+                cin >> input;
+                num2 = new BigInteger(input.c_str());
+                BigInteger result = num1->add(*num2);
+                cout << "Result = ";
+                result.print();
+                cout << endl;
+                delete num1;
+                num1 = new BigInteger(result);
+                delete num2;
+                break;
+            }
+            case '-': {
+                cin >> input;
+                num2 = new BigInteger(input.c_str());
+                BigInteger result = num1->subtract(*num2);
+                cout << "Result = ";
+                result.print();
+                cout << endl;
+                delete num1;
+                num1 = new BigInteger(result);
+                delete num2;
+                break;
+            }
+            case '*':{
+                cin >> input;
+                num2 = new BigInteger(input.c_str());
+                BigInteger result = num1->multiply(*num2);
+                cout << "Result = ";
+                result.print();
+                cout << endl;
+                delete num1;
+                num1 = new BigInteger(result);
+                delete num2;
+                break;
+            }
+            case '/': {
+                cin >> input;
+                num2 = new BigInteger(input.c_str());
+                BigInteger result = num1->divide(*num2);
+                cout << "Result = ";
+                result.print();
+                cout << endl;
+                delete num1;
+                num1 = new BigInteger(result);
+                delete num2;
+                break;
+            }
+            case '!': {
+                exit = true;
+                break;
+            }
+            default:
+                cout << "Invalid choice. Please enter again." << endl;
+        }
+        num1->print();
+    }
+
+    delete num1;
+    delete num2;
+    return 0;
+}
